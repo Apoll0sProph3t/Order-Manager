@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gerenciador de pedidos</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; margin: 20px; }
+      h2 { margin-top: 24px; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
+      input, select { padding: 6px; margin-right: 8px; }
+      button { padding: 6px 10px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #eee; padding: 6px; text-align: left; }
+      .status { font-size: 12px; color: #555; }
+    </style>
+  </head>
+  <body>
+    <h1>Gerenciador de pedidos</h1>
+    <div id="root"></div>
+    <script type="text/babel">
+      const api = (path, options) => fetch(path, { headers: { 'Content-Type': 'application/json' }, ...options });
+
+      function useFetch(path, deps = []) {
+        const [data, setData] = React.useState(null);
+        const [loading, setLoading] = React.useState(true);
+        const [error, setError] = React.useState(null);
+        const load = React.useCallback(() => {
+          setLoading(true);
+          api(path).then(r => r.json()).then(setData).catch(setError).finally(() => setLoading(false));
+        }, deps);
+        React.useEffect(() => { load(); }, [load]);
+        return { data, loading, error, reload: load };
+      }
+
+      function Products() {
+        const { data: products, loading, reload } = useFetch('/api/products');
+        const [name, setName] = React.useState('');
+        const [price, setPrice] = React.useState('');
+        const create = async () => {
+          await api('/api/products', { method: 'POST', body: JSON.stringify({ name, price: parseFloat(price) }) });
+          setName(''); setPrice(''); reload();
+        };
+        return (
+          <div className="card">
+            <h2>Produtos</h2>
+            {loading ? 'Carregando...' : (
+              <table>
+                <thead><tr><th>Nome</th><th>Preço</th></tr></thead>
+                <tbody>{(products || []).map(p => (<tr key={p.id}><td>{p.name}</td><td>R$ {p.price.toFixed(2)}</td></tr>))}</tbody>
+              </table>
+            )}
+            <div style={{ marginTop: 8 }}>
+              <input placeholder="Nome" value={name} onChange={e => setName(e.target.value)} />
+              <input type="number" placeholder="Preço" value={price} onChange={e => setPrice(e.target.value)} />
+              <button onClick={create}>Adicionar</button>
+            </div>
+          </div>
+        );
+      }
+
+      function Customers() {
+        const { data: customers, loading, reload } = useFetch('/api/customers');
+        const [name, setName] = React.useState('');
+        const [email, setEmail] = React.useState('');
+        const [phone, setPhone] = React.useState('');
+        const create = async () => {
+          await api('/api/customers', { method: 'POST', body: JSON.stringify({ name, email, phone }) });
+          setName(''); setEmail(''); setPhone(''); reload();
+        };
+        return (
+          <div className="card">
+            <h2>Clientes</h2>
+            {loading ? 'Carregando...' : (
+              <table>
+                <thead><tr><th>Nome</th><th>Email</th><th>Telefone</th></tr></thead>
+                <tbody>{(customers || []).map(c => (<tr key={c.id}><td>{c.name}</td><td>{c.email}</td><td>{c.phone}</td></tr>))}</tbody>
+              </table>
+            )}
+            <div style={{ marginTop: 8 }}>
+              <input placeholder="Nome" value={name} onChange={e => setName(e.target.value)} />
+              <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+              <input placeholder="Telefone" value={phone} onChange={e => setPhone(e.target.value)} />
+              <button onClick={create}>Adicionar</button>
+            </div>
+          </div>
+        );
+      }
+
+      function Orders() {
+        const { data: orders, loading, error, reload } = useFetch('/api/orders');
+        const { data: customers } = useFetch('/api/customers');
+        const { data: products } = useFetch('/api/products');
+        const [customerId, setCustomerId] = React.useState('');
+        const [productId, setProductId] = React.useState('');
+        const [quantity, setQuantity] = React.useState('1');
+        const create = async () => {
+          const items = [{ productId, quantity: parseInt(quantity) }];
+          await api('/api/orders', { method: 'POST', body: JSON.stringify({ customerId, items }) });
+          setQuantity('1'); reload();
+        };
+        const setPaid = async (id) => {
+          await api(`/api/orders/${id}/status`, { method: 'PUT', body: JSON.stringify({ orderId: id, status: 1 }) });
+          reload();
+        };
+        const removeOrder = async (id) => {
+          await api(`/api/orders/${id}`, { method: 'DELETE' });
+          reload();
+        };
+        const detail = async (id) => {
+          const r = await api(`/api/orders/${id}`);
+          const d = await r.json();
+          alert(`Pedido ${id}\nCliente: ${d.customer.name}\nTotal: R$ ${d.totalAmount.toFixed(2)}\nItens: ${d.items.length}`);
+        };
+        return (
+          <div className="card">
+            <h2>Pedidos</h2>
+            {loading ? 'Carregando...' : error ? <div>Erro ao carregar pedidos</div> : (
+              <table>
+                <thead><tr><th>ID</th><th>Cliente</th><th>Data</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
+                <tbody>{(orders || []).map(o => (
+                  <tr key={o.id}>
+                    <td>{o.id}</td>
+                    <td>{o.customerName}</td>
+                    <td>{new Date(o.orderDate).toLocaleString('pt-BR')}</td>
+                    <td>R$ {o.totalAmount.toFixed(2)}</td>
+                    <td className="status">{o.status}</td>
+                    <td>
+                      <button onClick={() => detail(o.id)}>Detalhar</button>
+                      <button onClick={() => setPaid(o.id)} style={{ marginLeft: 6 }}>Marcar pago</button>
+                      <button onClick={() => removeOrder(o.id)} style={{ marginLeft: 6 }}>Remover</button>
+                    </td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            )}
+            <div style={{ marginTop: 8 }}>
+              <select value={customerId} onChange={e => setCustomerId(e.target.value)}>
+                <option value="">Cliente</option>
+                {(customers || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <select value={productId} onChange={e => setProductId(e.target.value)}>
+                <option value="">Produto</option>
+                {(products || []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <input type="number" min="1" value={quantity} onChange={e => setQuantity(e.target.value)} />
+              <button onClick={create}>Criar pedido</button>
+            </div>
+          </div>
+        );
+      }
+
+      function App() {
+        return (
+          <div className="grid">
+            <Products />
+            <Customers />
+            <Orders />
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+  </html>
