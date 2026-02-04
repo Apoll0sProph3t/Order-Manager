@@ -26,32 +26,15 @@ public class OrderHandlers :
             .Where(p => request.Items.Select(i => i.ProductId).Contains(p.Id))
             .ToDictionaryAsync(p => p.Id, ct);
 
-        var order = new Order
-        {
-            CustomerId = customer.Id,
-            OrderDate = DateTime.UtcNow,
-            Status = OrderStatus.Pending
-        };
+        var order = new Order(customer.Id);
 
         foreach (var item in request.Items)
         {
             if (!products.TryGetValue(item.ProductId, out var product))
                 throw new KeyNotFoundException($"Product {item.ProductId} not found");
 
-            var unit = product.Price;
-            var total = unit * item.Quantity;
-            order.Items.Add(new OrderItem
-            {
-                OrderId = order.Id,
-                ProductId = product.Id,
-                ProductName = product.Name,
-                Quantity = item.Quantity,
-                UnitPrice = unit,
-                TotalPrice = total
-            });
+            order.AddItem(product, item.Quantity);
         }
-
-        order.TotalAmount = order.Items.Sum(i => i.TotalPrice);
 
         _db.Orders.Add(order);
         await _db.SaveChangesAsync(ct);
@@ -73,7 +56,7 @@ public class OrderHandlers :
         var order = await _db.Orders.Include(o => o.Customer).Include(o => o.Items)
             .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct) ?? throw new KeyNotFoundException("Order not found");
 
-        order.Status = request.Status;
+        order.ChangeStatus(request.Status);
         await _db.SaveChangesAsync(ct);
 
         var dto = new OrderDetailDto(
