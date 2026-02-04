@@ -17,7 +17,7 @@ public class CustomerHandlers :
 
     public async Task<Guid> Handle(CreateCustomer request, CancellationToken ct)
     {
-        var c = new Customer { Name = request.Name, Email = request.Email, Phone = request.Phone };
+        var c = new Customer { Name = request.Name, Email = new Domain.ValueObjects.Email(request.Email), Phone = new Domain.ValueObjects.Phone(request.Phone) };
         _db.Customers.Add(c);
         await _db.SaveChangesAsync(ct);
         return c.Id;
@@ -26,7 +26,7 @@ public class CustomerHandlers :
     public async Task Handle(UpdateCustomer request, CancellationToken ct)
     {
         var c = await _db.Customers.FindAsync(new object?[] { request.Id }, ct) ?? throw new KeyNotFoundException("Customer not found");
-        c.Name = request.Name; c.Email = request.Email; c.Phone = request.Phone;
+        c.Name = request.Name; c.Email = new Domain.ValueObjects.Email(request.Email); c.Phone = new Domain.ValueObjects.Phone(request.Phone);
         await _db.SaveChangesAsync(ct);
     }
 

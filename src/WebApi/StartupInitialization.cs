@@ -60,11 +60,11 @@ public static class StartupInitialization
         {
             var dto = new Application.DTOs.OrderDetailDto(
                 order.Id,
-                new Application.DTOs.CustomerDto(order.CustomerId, order.Customer!.Name, order.Customer.Email, order.Customer.Phone),
+                new Application.DTOs.CustomerDto(order.CustomerId, order.Customer!.Name, order.Customer.Email.Value, order.Customer.Phone.Value),
                 order.OrderDate,
-                order.TotalAmount,
+                order.TotalAmount.Value,
                 order.Status.ToString(),
-                order.Items.Select(i => new Application.DTOs.OrderItemDto(i.ProductId, i.ProductName, i.Quantity, i.UnitPrice, i.TotalPrice)).ToList());
+                order.Items.Select(i => new Application.DTOs.OrderItemDto(i.ProductId, i.ProductName, i.Quantity, i.UnitPrice.Value, i.TotalPrice.Value)).ToList());
             await read.UpsertOrderReadModelAsync(dto, CancellationToken.None);
         }
     }

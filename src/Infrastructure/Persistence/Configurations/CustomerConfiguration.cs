@@ -10,7 +10,11 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
     {
         e.HasKey(x => x.Id);
         e.Property(x => x.Name).HasMaxLength(200).IsRequired();
-        e.Property(x => x.Email).HasMaxLength(200).IsRequired();
-        e.Property(x => x.Phone).HasMaxLength(50).IsRequired();
+        e.Property(x => x.Email)
+            .HasConversion(v => v.Value, v => new Domain.ValueObjects.Email(v))
+            .HasMaxLength(200).IsRequired();
+        e.Property(x => x.Phone)
+            .HasConversion(v => v.Value, v => new Domain.ValueObjects.Phone(v))
+            .HasMaxLength(50).IsRequired();
     }
 }

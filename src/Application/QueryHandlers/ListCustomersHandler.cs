@@ -14,7 +14,7 @@ public class ListCustomersHandler : IRequestHandler<ListCustomersQuery, IReadOnl
     public async Task<IReadOnlyList<CustomerDto>> Handle(ListCustomersQuery request, CancellationToken ct)
     {
         return await _db.Customers.AsNoTracking()
-            .Select(x => new CustomerDto(x.Id, x.Name, x.Email, x.Phone))
+            .Select(x => new CustomerDto(x.Id, x.Name, x.Email.Value, x.Phone.Value))
             .ToListAsync(ct);
     }
 }

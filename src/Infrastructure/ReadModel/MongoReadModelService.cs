@@ -53,11 +53,11 @@ public class MongoReadModelService : IReadModelService
             if (order == null) return null;
             return new OrderDetailDto(
                 order.Id,
-                new CustomerDto(order.CustomerId, order.Customer!.Name, order.Customer.Email, order.Customer.Phone),
+                new CustomerDto(order.CustomerId, order.Customer!.Name, order.Customer.Email.Value, order.Customer.Phone.Value),
                 order.OrderDate,
-                order.TotalAmount,
+                order.TotalAmount.Value,
                 order.Status.ToString(),
-                order.Items.Select(i => new OrderItemDto(i.ProductId, i.ProductName, i.Quantity, i.UnitPrice, i.TotalPrice)).ToList());
+                order.Items.Select(i => new OrderItemDto(i.ProductId, i.ProductName, i.Quantity, i.UnitPrice.Value, i.TotalPrice.Value)).ToList());
         }
     }
 
@@ -72,7 +72,7 @@ public class MongoReadModelService : IReadModelService
         {
             return await _db.Orders.AsNoTracking()
                 .Include(o => o.Customer)
-                .Select(o => new OrderSummaryDto(o.Id, o.Customer!.Name, o.OrderDate, o.TotalAmount, o.Status.ToString()))
+                .Select(o => new OrderSummaryDto(o.Id, o.Customer!.Name, o.OrderDate, o.TotalAmount.Value, o.Status.ToString()))
                 .ToListAsync(ct);
         }
     }

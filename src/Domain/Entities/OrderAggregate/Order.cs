@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Domain.Entities.BaseEntity;
 using Domain.Enums;
+using Domain.ValueObjects;
 
 namespace Domain.Entities;
 
@@ -10,7 +11,7 @@ public class Order : Entity
     public Guid CustomerId { get; private set; }
     public Customer? Customer { get; private set; }
     public DateTime OrderDate { get; private set; }
-    public decimal TotalAmount { get; private set; }
+    public Money TotalAmount { get; private set; }
     public OrderStatus Status { get; private set; }
     public List<OrderItem> Items { get; private set; } = new();
 
@@ -29,7 +30,7 @@ public class Order : Entity
         if (quantity <= 0) throw new InvalidOperationException("Quantidade inválida.");
 
         var unit = product.Price;
-        var total = unit * quantity;
+        var total = new Money(unit.Value * quantity);
 
         Items.Add(new OrderItem
         {
@@ -56,6 +57,6 @@ public class Order : Entity
 
     private void RecalculateTotal()
     {
-        TotalAmount = Items.Sum(i => i.TotalPrice);
+        TotalAmount = new Money(Items.Sum(i => i.TotalPrice.Value));
     }
 }

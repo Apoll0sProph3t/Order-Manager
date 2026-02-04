@@ -14,8 +14,9 @@ public class OrderHandlers :
     IRequestHandler<DeleteOrder>
 {
     private readonly IAppDbContext _db;
-    private readonly IReadModelService _read;
-    public OrderHandlers(IAppDbContext db, IReadModelService read) { _db = db; _read = read; }
+    private readonly IMediator _mediator;
+    private readonly IOrderRepository _orders;
+    public OrderHandlers(IAppDbContext db, IMediator mediator, IOrderRepository orders) { _db = db; _mediator = mediator; _orders = orders; }
 
     public async Task<Guid> Handle(CreateOrder request, CancellationToken ct)
     {
@@ -36,46 +37,29 @@ public class OrderHandlers :
             order.AddItem(product, item.Quantity);
         }
 
-        _db.Orders.Add(order);
+        await _orders.AddAsync(order, ct);
         await _db.SaveChangesAsync(ct);
 
-        var dto = new OrderDetailDto(
-            order.Id,
-            new CustomerDto(customer.Id, customer.Name, customer.Email, customer.Phone),
-            order.OrderDate,
-            order.TotalAmount,
-            order.Status.ToString(),
-            order.Items.Select(i => new OrderItemDto(i.ProductId, i.ProductName, i.Quantity, i.UnitPrice, i.TotalPrice)).ToList());
-
-        await _read.UpsertOrderReadModelAsync(dto, ct);
+        await _mediator.Publish(new Application.Events.OrderCreated(order.Id), ct);
         return order.Id;
     }
 
     public async Task Handle(UpdateOrderStatus request, CancellationToken ct)
     {
-        var order = await _db.Orders.Include(o => o.Customer).Include(o => o.Items)
-            .FirstOrDefaultAsync(o => o.Id == request.OrderId, ct) ?? throw new KeyNotFoundException("Order not found");
+        var order = await _orders.GetByIdWithCustomerItemsAsync(request.OrderId, ct) ?? throw new KeyNotFoundException("Order not found");
 
         order.ChangeStatus(request.Status);
         await _db.SaveChangesAsync(ct);
 
-        var dto = new OrderDetailDto(
-            order.Id,
-            new CustomerDto(order.CustomerId, order.Customer!.Name, order.Customer.Email, order.Customer.Phone),
-            order.OrderDate,
-            order.TotalAmount,
-            order.Status.ToString(),
-            order.Items.Select(i => new OrderItemDto(i.ProductId, i.ProductName, i.Quantity, i.UnitPrice, i.TotalPrice)).ToList());
-
-        await _read.UpsertOrderReadModelAsync(dto, ct);
+        await _mediator.Publish(new Application.Events.OrderStatusChanged(order.Id, request.Status), ct);
     }
 
     public async Task Handle(DeleteOrder request, CancellationToken ct)
     {
-        var order = await _db.Orders.FindAsync(new object?[] { request.OrderId }, ct) ?? throw new KeyNotFoundException("Order not found");
-        _db.Orders.Remove(order);
+        var order = await _orders.GetByIdAsync(request.OrderId, ct) ?? throw new KeyNotFoundException("Order not found");
+        await _orders.RemoveAsync(order, ct);
         await _db.SaveChangesAsync(ct);
-        await _read.DeleteOrderReadModelAsync(request.OrderId, ct);
+        await _mediator.Publish(new Application.Events.OrderDeleted(request.OrderId), ct);
     }
 
 }

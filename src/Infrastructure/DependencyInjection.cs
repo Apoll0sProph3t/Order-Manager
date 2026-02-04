@@ -19,6 +19,7 @@ public static class DependencyInjection
         var mongoConn = config.GetConnectionString("MongoDb");
         services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoConn));
         services.AddScoped<IReadModelService, MongoReadModelService>();
+        services.AddScoped<IOrderRepository, Infrastructure.Persistence.Repositories.OrderRepository>();
 
         return services;
     }

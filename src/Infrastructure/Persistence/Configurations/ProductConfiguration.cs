@@ -10,6 +10,8 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
     {
         e.HasKey(x => x.Id);
         e.Property(x => x.Name).HasMaxLength(200).IsRequired();
-        e.Property(x => x.Price).HasColumnType("decimal(18,2)");
+        e.Property(x => x.Price)
+            .HasConversion(v => v.Value, v => new Domain.ValueObjects.Money(v))
+            .HasColumnType("decimal(18,2)");
     }
 }
