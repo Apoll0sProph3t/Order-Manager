@@ -1,28 +1,23 @@
+using Application.Commands;
 using Application.Common.Interfaces;
-using Application.Customers.DTOs;
+using Application.DTOs;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Customers.Commands;
-
-public record CreateCustomer(string Name, string Email, string Phone) : IRequest<Guid>;
-public record UpdateCustomer(Guid Id, string Name, string Email, string Phone) : IRequest;
-public record DeleteCustomer(Guid Id) : IRequest;
-public record ListCustomers : IRequest<IReadOnlyList<CustomerDto>>;
+namespace Application.CommandHandlers;
 
 public class CustomerHandlers :
     IRequestHandler<CreateCustomer, Guid>,
     IRequestHandler<UpdateCustomer>,
-    IRequestHandler<DeleteCustomer>,
-    IRequestHandler<ListCustomers, IReadOnlyList<CustomerDto>>
+    IRequestHandler<DeleteCustomer>
 {
     private readonly IAppDbContext _db;
     public CustomerHandlers(IAppDbContext db) => _db = db;
 
     public async Task<Guid> Handle(CreateCustomer request, CancellationToken ct)
     {
-        var c = new Customer { Id = Guid.NewGuid(), Name = request.Name, Email = request.Email, Phone = request.Phone };
+        var c = new Customer { Name = request.Name, Email = request.Email, Phone = request.Phone };
         _db.Customers.Add(c);
         await _db.SaveChangesAsync(ct);
         return c.Id;
@@ -38,14 +33,11 @@ public class CustomerHandlers :
     public async Task Handle(DeleteCustomer request, CancellationToken ct)
     {
         var c = await _db.Customers.FindAsync(new object?[] { request.Id }, ct) ?? throw new KeyNotFoundException("Customer not found");
+        var hasOrders = await _db.Orders.AsNoTracking().AnyAsync(o => o.CustomerId == request.Id, ct);
+        if (hasOrders)
+            throw new InvalidOperationException("Cliente possui pedidos associados e não pode ser excluído.");
         _db.Customers.Remove(c);
         await _db.SaveChangesAsync(ct);
     }
 
-    public async Task<IReadOnlyList<CustomerDto>> Handle(ListCustomers request, CancellationToken ct)
-    {
-        return await _db.Customers.AsNoTracking()
-            .Select(x => new CustomerDto(x.Id, x.Name, x.Email, x.Phone))
-            .ToListAsync(ct);
-    }
 }

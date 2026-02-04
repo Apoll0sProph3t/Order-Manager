@@ -1,5 +1,6 @@
-using Application.Orders.Commands;
-using Application.Orders.DTOs;
+using Application.Commands;
+using Application.DTOs;
+using Application.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,11 +15,11 @@ public class OrdersController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<OrderSummaryDto>>> List() =>
-        Ok(await _mediator.Send(new ListOrders()));
+        Ok(await _mediator.Send(new ListOrdersQuery()));
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<OrderDetailDto?>> Get(Guid id) =>
-        Ok(await _mediator.Send(new GetOrderDetail(id)));
+        Ok(await _mediator.Send(new GetOrderDetailQuery(id)));
 
     public record CreateOrderItem(Guid ProductId, int Quantity);
     public record CreateOrderBody(Guid CustomerId, List<CreateOrderItem> Items);

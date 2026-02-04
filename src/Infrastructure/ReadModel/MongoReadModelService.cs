@@ -1,6 +1,5 @@
 using Application.Common.Interfaces;
-using Application.Customers.DTOs;
-using Application.Orders.DTOs;
+using Application.DTOs;
 using Domain.Enums;
 using MongoDB.Driver;
 using Microsoft.EntityFrameworkCore;

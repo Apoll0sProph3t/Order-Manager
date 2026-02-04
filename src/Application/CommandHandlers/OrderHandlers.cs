@@ -1,25 +1,17 @@
+using Application.Commands;
 using Application.Common.Interfaces;
-using Application.Customers.DTOs;
-using Application.Orders.DTOs;
+using Application.DTOs;
 using Domain.Entities;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Orders.Commands;
-
-public record CreateOrder(Guid CustomerId, IReadOnlyList<(Guid ProductId, int Quantity)> Items) : IRequest<Guid>;
-public record UpdateOrderStatus(Guid OrderId, OrderStatus Status) : IRequest;
-public record DeleteOrder(Guid OrderId) : IRequest;
-public record ListOrders : IRequest<IReadOnlyList<OrderSummaryDto>>;
-public record GetOrderDetail(Guid OrderId) : IRequest<OrderDetailDto?>;
+namespace Application.CommandHandlers;
 
 public class OrderHandlers :
     IRequestHandler<CreateOrder, Guid>,
     IRequestHandler<UpdateOrderStatus>,
-    IRequestHandler<DeleteOrder>,
-    IRequestHandler<ListOrders, IReadOnlyList<OrderSummaryDto>>,
-    IRequestHandler<GetOrderDetail, OrderDetailDto?>
+    IRequestHandler<DeleteOrder>
 {
     private readonly IAppDbContext _db;
     private readonly IReadModelService _read;
@@ -36,7 +28,6 @@ public class OrderHandlers :
 
         var order = new Order
         {
-            Id = Guid.NewGuid(),
             CustomerId = customer.Id,
             OrderDate = DateTime.UtcNow,
             Status = OrderStatus.Pending
@@ -51,7 +42,6 @@ public class OrderHandlers :
             var total = unit * item.Quantity;
             order.Items.Add(new OrderItem
             {
-                Id = Guid.NewGuid(),
                 OrderId = order.Id,
                 ProductId = product.Id,
                 ProductName = product.Name,
@@ -105,9 +95,4 @@ public class OrderHandlers :
         await _read.DeleteOrderReadModelAsync(request.OrderId, ct);
     }
 
-    public Task<IReadOnlyList<OrderSummaryDto>> Handle(ListOrders request, CancellationToken ct) =>
-        _read.ListOrdersAsync(ct);
-
-    public Task<OrderDetailDto?> Handle(GetOrderDetail request, CancellationToken ct) =>
-        _read.GetOrderDetailAsync(request.OrderId, ct);
 }

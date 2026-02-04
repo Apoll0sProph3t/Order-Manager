@@ -1,3 +1,3 @@
-namespace Application.Products.DTOs;
+namespace Application.DTOs;
 
 public record ProductDto(Guid Id, string Name, decimal Price);

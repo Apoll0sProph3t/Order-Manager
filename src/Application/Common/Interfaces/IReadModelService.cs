@@ -1,4 +1,4 @@
-using Application.Orders.DTOs;
+using Application.DTOs;
 
 namespace Application.Common.Interfaces;
 

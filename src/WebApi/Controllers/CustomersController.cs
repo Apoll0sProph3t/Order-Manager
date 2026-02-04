@@ -1,5 +1,6 @@
-using Application.Customers.Commands;
-using Application.Customers.DTOs;
+using Application.Commands;
+using Application.DTOs;
+using Application.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,7 +15,7 @@ public class CustomersController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<CustomerDto>>> List() =>
-        Ok(await _mediator.Send(new ListCustomers()));
+        Ok(await _mediator.Send(new ListCustomersQuery()));
 
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateCustomer cmd) =>

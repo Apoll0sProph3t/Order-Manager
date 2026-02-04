@@ -1,6 +1,4 @@
-using Application.Customers.DTOs;
-
-namespace Application.Orders.DTOs;
+namespace Application.DTOs;
 
 public record OrderDetailDto(
     Guid Id,

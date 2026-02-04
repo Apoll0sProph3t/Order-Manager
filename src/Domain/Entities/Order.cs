@@ -1,10 +1,10 @@
+using Domain.Entities.BaseEntity;
 using Domain.Enums;
 
 namespace Domain.Entities;
 
-public class Order
+public class Order : Entity
 {
-    public Guid Id { get; set; }
     public Guid CustomerId { get; set; }
     public Customer? Customer { get; set; }
     public DateTime OrderDate { get; set; }

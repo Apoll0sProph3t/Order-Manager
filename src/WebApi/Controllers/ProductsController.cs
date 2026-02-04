@@ -1,5 +1,6 @@
-using Application.Products.Commands;
-using Application.Products.DTOs;
+using Application.Commands;
+using Application.DTOs;
+using Application.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,7 +15,7 @@ public class ProductsController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<ProductDto>>> List() =>
-        Ok(await _mediator.Send(new ListProducts()));
+        Ok(await _mediator.Send(new ListProductsQuery()));
 
     [HttpPost]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateProduct cmd) =>
